@@ -1,0 +1,43 @@
+import os
+import streamlit as st
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+# Imports from the new LangChain packages
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.vectorstores import FAISS
+from langchain_classic.chains import RetrievalQA
+
+# Step 1: Knowledge base (replace with your own docs or PDF chunks later)
+documents = [
+    "RAG stands for Retrieval-Augmented Generation.",
+    "It improves LLMs by retrieving external knowledge before generating answers.",
+    "RAG is useful for domains like medical, legal, and enterprise knowledge bases."
+]
+
+# Step 2: Embeddings + FAISS
+embeddings = OpenAIEmbeddings(api_key=api_key)
+vectorstore = FAISS.from_texts(documents, embeddings)
+
+# Step 3: RetrievalQA chain
+retriever = vectorstore.as_retriever()
+qa_chain = RetrievalQA.from_chain_type(
+    llm=ChatOpenAI(model="gpt-3.5-turbo", api_key=api_key),
+    retriever=retriever,
+    chain_type="stuff"
+)
+
+# Step 4: Streamlit UI
+st.title("🔎 RAG Demo App")
+query = st.text_input("Ask a question:")
+
+if query:
+    answer = qa_chain.run(query)
+    st.write("💡 Answer:", answer)
+
+# Run this by  streamlit run RAG_first_example.py
+    answer = qa_chain.run(query)
+    st.write("💡 Answer:", answer)
