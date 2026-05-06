@@ -1,0 +1,50 @@
+import os
+import streamlit as st
+from dotenv import load_dotenv
+from PyPDF2 import PdfReader
+
+# Load environment variables
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+# LangChain imports
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_community.vectorstores import FAISS
+from langchain_classic.chains import RetrievalQA
+
+# Step 1: Streamlit UI
+st.title("📄 RAG PDF Q&A App")
+
+uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+
+if uploaded_file is not None:
+    # Step 2: Extract text from PDF
+    pdf_reader = PdfReader(uploaded_file)
+    text = ""
+    for page in pdf_reader.pages:
+        text += page.extract_text() or ""
+
+    # Step 3: Split into chunks (basic version)
+    chunks = text.split("\n\n")  # simple split by paragraphs
+
+    # Step 4: Create embeddings + FAISS
+    embeddings = OpenAIEmbeddings(api_key=api_key)
+    vectorstore = FAISS.from_texts(chunks, embeddings)
+
+    # Step 5: RetrievalQA chain
+    retriever = vectorstore.as_retriever()
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=ChatOpenAI(model="gpt-3.5-turbo", api_key=api_key),
+        retriever=retriever,
+        chain_type="stuff"
+    )
+
+    # Step 6: Ask questions
+    query = st.text_input("Ask a question about your PDF:")
+
+if query:
+    answer = qa_chain.run(query)
+    st.write("💡 Answer:", answer)
+
+        answer = qa_chain.run(query)
+        st.write("💡 Answer:", answer)
